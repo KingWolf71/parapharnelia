@@ -26,8 +26,17 @@
 .PARAMETER WhatIf
     Show what would be done without actually making changes.
 
+.PARAMETER Help
+    Display this help information. Can also use -h or --help.
+
 .EXAMPLE
     .\Invoke-MEUserOffboarding.ps1 -Username "john.doe"
+
+.EXAMPLE
+    .\Invoke-MEUserOffboarding.ps1 -h
+
+.EXAMPLE
+    .\Invoke-MEUserOffboarding.ps1 --help
 
 .EXAMPLE
     .\Invoke-MEUserOffboarding.ps1 -Username "jane.smith" -BackupMailbox -BackupPath "D:\Backups"
@@ -41,7 +50,7 @@
 
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$false, Position=0)]
     [string]$Username,
 
     [Parameter(Mandatory=$false)]
@@ -54,8 +63,26 @@ param(
     [string]$BackupPath = "C:\MailEnable\Backups\Offboarding",
 
     [Parameter(Mandatory=$false)]
-    [switch]$WhatIf
+    [switch]$WhatIf,
+
+    [Parameter(Mandatory=$false)]
+    [Alias("h")]
+    [switch]$Help
 )
+
+# Handle -h or --help parameters
+if ($Help -or $args -contains "-h" -or $args -contains "--help") {
+    Get-Help $MyInvocation.MyCommand.Path -Detailed
+    exit 0
+}
+
+# Validate required parameters
+if ([string]::IsNullOrEmpty($Username)) {
+    Write-Host "Error: -Username parameter is required" -ForegroundColor Red
+    Write-Host "Use -h or --help for usage information" -ForegroundColor Yellow
+    Write-Host "`nQuick usage: .\Invoke-MEUserOffboarding.ps1 -Username `"john.doe`"" -ForegroundColor Cyan
+    exit 1
+}
 
 # Initialize logging
 $logFile = ".\offboarding-$Username-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"

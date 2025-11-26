@@ -23,6 +23,10 @@
 .PARAMETER BackupPath
     Path for mailbox backups (default: C:\MailEnable\Backups\Offboarding).
 
+.PARAMETER MailEnablePath
+    Base path to MailEnable installation (default: C:\Program Files (x86)\Mail Enable).
+    Change this if your mail data is on a different drive.
+
 .PARAMETER WhatIf
     Show what would be done without actually making changes.
 
@@ -46,6 +50,9 @@
 
 .EXAMPLE
     .\Invoke-MEUserOffboarding.ps1 -Username "alice" -ReplacementUser "mark"
+
+.EXAMPLE
+    .\Invoke-MEUserOffboarding.ps1 -Username "john.doe" -MailEnablePath "D:\MailEnable"
 #>
 
 [CmdletBinding(SupportsShouldProcess=$true)]
@@ -61,6 +68,9 @@ param(
 
     [Parameter(Mandatory=$false)]
     [string]$BackupPath = "C:\MailEnable\Backups\Offboarding",
+
+    [Parameter(Mandatory=$false)]
+    [string]$MailEnablePath = "C:\Program Files (x86)\Mail Enable",
 
     [Parameter(Mandatory=$false)]
     [Alias("h")]
@@ -107,7 +117,7 @@ function Write-Log {
 # Function to get all post offices
 function Get-MEPostOffices {
     try {
-        $poPath = "C:\Program Files (x86)\Mail Enable\Postoffices"
+        $poPath = Join-Path $MailEnablePath "Postoffices"
         if (Test-Path $poPath) {
             return Get-ChildItem -Path $poPath -Directory | Select-Object -ExpandProperty Name
         }
@@ -133,7 +143,7 @@ function Backup-MEMailbox {
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
         $backupFile = Join-Path $BackupPath "$Mailbox@$PostOffice-$timestamp.zip"
 
-        $mailboxPath = "C:\Program Files (x86)\Mail Enable\Postoffices\$PostOffice\MAILROOT\$Mailbox"
+        $mailboxPath = Join-Path $MailEnablePath "Postoffices\$PostOffice\MAILROOT\$Mailbox"
 
         if (Test-Path $mailboxPath) {
             if (-not $WhatIf) {
@@ -164,7 +174,7 @@ function Remove-MEUserFromGroups {
         Write-Log "Removing $Mailbox@$PostOffice from all distribution groups..." -Level "INFO"
 
         # MailEnable groups are typically stored in the Groups directory
-        $groupsPath = "C:\Program Files (x86)\Mail Enable\Postoffices\$PostOffice\Groups"
+        $groupsPath = Join-Path $MailEnablePath "Postoffices\$PostOffice\Groups"
 
         if (Test-Path $groupsPath) {
             $groups = Get-ChildItem -Path $groupsPath -Filter "*.mem" -File
@@ -214,7 +224,7 @@ function Add-MEForwardingAlias {
         Write-Log "Setting up forwarding from $FromMailbox@$PostOffice to $ToMailbox@$PostOffice..." -Level "INFO"
 
         # Create redirect/alias using MailEnable
-        $redirectPath = "C:\Program Files (x86)\Mail Enable\Postoffices\$PostOffice\MAILROOT\$FromMailbox"
+        $redirectPath = Join-Path $MailEnablePath "Postoffices\$PostOffice\MAILROOT\$FromMailbox"
 
         if (-not $WhatIf) {
             # Method 1: Create .forward file (common approach)
@@ -305,7 +315,7 @@ function Process-MEMailbox {
     # Step 3: Remove email addresses/aliases
     Write-Log "Step 3: Removing email addresses and aliases..." -Level "INFO"
     try {
-        $aliasPath = "C:\Program Files (x86)\Mail Enable\Postoffices\$PostOffice\MAILROOT\$Mailbox\aliases"
+        $aliasPath = Join-Path $MailEnablePath "Postoffices\$PostOffice\MAILROOT\$Mailbox\aliases"
 
         if (Test-Path $aliasPath) {
             if (-not $WhatIf) {
@@ -362,7 +372,7 @@ try {
 
     # Search all post offices for the mailbox
     foreach ($po in $postOffices) {
-        $mailboxPath = "C:\Program Files (x86)\Mail Enable\Postoffices\$po\MAILROOT\$Username"
+        $mailboxPath = Join-Path $MailEnablePath "Postoffices\$po\MAILROOT\$Username"
 
         if (Test-Path $mailboxPath) {
             Write-Log "Found mailbox: $Username@$po" -Level "INFO"

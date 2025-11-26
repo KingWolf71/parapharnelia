@@ -139,6 +139,122 @@ Lists and reports on mailboxes.
 
 ---
 
+### 6. Set-MEMailboxStatus.ps1
+Enables or disables mailboxes without deleting them.
+
+**Usage:**
+```powershell
+# Disable a mailbox
+.\Set-MEMailboxStatus.ps1 -PostOffice "example.com" -Mailbox "john.doe" -Status Disable
+
+# Re-enable a mailbox
+.\Set-MEMailboxStatus.ps1 -PostOffice "example.com" -Mailbox "john.doe" -Status Enable
+
+# Show current status before changing
+.\Set-MEMailboxStatus.ps1 -PostOffice "example.com" -Mailbox "john.doe" -Status Disable -ShowCurrent
+```
+
+**Parameters:**
+- `PostOffice` (required): Domain name
+- `Mailbox` (required): Username
+- `Status` (required): Enable or Disable
+- `ShowCurrent` (optional): Display current status before changing
+
+---
+
+### 7. Invoke-MEBulkOperations.ps1
+Performs batch operations using CSV files.
+
+**Usage:**
+```powershell
+# Bulk add users
+.\Invoke-MEBulkOperations.ps1 -Operation Add -CSVPath "new-users.csv"
+
+# Bulk update quotas
+.\Invoke-MEBulkOperations.ps1 -Operation SetQuota -CSVPath "quota-updates.csv"
+
+# Bulk password resets
+.\Invoke-MEBulkOperations.ps1 -Operation ResetPassword -CSVPath "password-resets.csv"
+
+# Bulk remove users
+.\Invoke-MEBulkOperations.ps1 -Operation Remove -CSVPath "users-to-remove.csv"
+```
+
+**Parameters:**
+- `Operation` (required): Add, Remove, SetQuota, or ResetPassword
+- `CSVPath` (required): Path to CSV file with user data
+- `LogPath` (optional): Log file path (default: bulk-operations.log)
+
+**CSV Formats:**
+- Add: PostOffice, Mailbox, Password, FirstName, LastName, Quota
+- Remove: PostOffice, Mailbox
+- SetQuota: PostOffice, Mailbox, QuotaMB
+- ResetPassword: PostOffice, Mailbox, NewPassword
+
+---
+
+### 8. Invoke-MEUserOffboarding.ps1
+**Complete user offboarding workflow across all domains.**
+
+This script automates the entire user departure process:
+1. Searches ALL domains for the specified username
+2. Disables mailbox(es) to prevent login
+3. Removes email addresses and aliases
+4. Sets up forwarding to markattard@domain (or specified replacement)
+5. Removes user from all distribution groups
+6. Optionally backs up mailbox data
+
+**Usage:**
+```powershell
+# Basic offboarding (forwards to markattard@domain)
+.\Invoke-MEUserOffboarding.ps1 -Username "john.doe"
+
+# With mailbox backup
+.\Invoke-MEUserOffboarding.ps1 -Username "jane.smith" -BackupMailbox
+
+# Preview changes without executing (WhatIf mode)
+.\Invoke-MEUserOffboarding.ps1 -Username "bob.jones" -WhatIf
+
+# Use different replacement user
+.\Invoke-MEUserOffboarding.ps1 -Username "alice" -ReplacementUser "mark"
+
+# Full offboarding with custom backup location
+.\Invoke-MEUserOffboarding.ps1 -Username "john.doe" -BackupMailbox -BackupPath "D:\MailBackups"
+```
+
+**Parameters:**
+- `Username` (required): Username to offboard (without @domain)
+- `ReplacementUser` (optional): Replacement user for forwarding (default: markattard)
+- `BackupMailbox` (optional): Backup mailbox before processing
+- `BackupPath` (optional): Backup destination (default: C:\MailEnable\Backups\Offboarding)
+- `WhatIf` (optional): Preview changes without executing
+
+**What it does:**
+- ✓ Scans all domains automatically
+- ✓ Disables mailbox (prevents login, stops mail delivery)
+- ✓ Removes all aliases and email addresses
+- ✓ Creates forwarding to markattard@domain (or specified user)
+- ✓ Removes from all distribution groups
+- ✓ Creates detailed log file
+- ✓ Provides summary report
+
+**Example Output:**
+```
+Found mailbox: john.doe@example.com
+Found mailbox: john.doe@company.net
+
+Processing: john.doe@example.com
+  ✓ Backup created
+  ✓ Mailbox disabled
+  ✓ Aliases removed
+  ✓ Forwarding added to markattard@example.com
+  ✓ Removed from 3 distribution groups
+
+Processed 2 mailboxes across domains
+```
+
+---
+
 ## Common Scenarios
 
 ### Bulk User Creation
@@ -190,6 +306,31 @@ Import-Csv .\temp.csv | ForEach-Object {
 # Create detailed report of all mailboxes
 .\Get-MEMailboxes.ps1 -Detailed -ExportCSV -CSVPath "C:\Reports\mailbox-report-$(Get-Date -Format 'yyyyMMdd').csv"
 ```
+
+### User Offboarding (Employee Departure)
+
+When an employee leaves and you need to disable their accounts across all domains and redirect their email:
+
+```powershell
+# Basic offboarding - automatically finds user in all domains
+.\Invoke-MEUserOffboarding.ps1 -Username "departing.employee"
+
+# Recommended: With backup for compliance/legal hold
+.\Invoke-MEUserOffboarding.ps1 -Username "departing.employee" -BackupMailbox
+
+# Preview what will happen first (safe dry-run)
+.\Invoke-MEUserOffboarding.ps1 -Username "departing.employee" -WhatIf
+
+# After confirming, run with backup
+.\Invoke-MEUserOffboarding.ps1 -Username "departing.employee" -BackupMailbox
+```
+
+This single command will:
+- Find `departing.employee@domain1.com`, `departing.employee@domain2.com`, etc.
+- Disable all found mailboxes
+- Redirect all incoming mail to `markattard@domain`
+- Remove from distribution groups
+- Create backup archives (if specified)
 
 ## Security Considerations
 

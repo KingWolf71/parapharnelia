@@ -1,0 +1,5 @@
+PostOffice,Mailbox,Password,FirstName,LastName,Quota
+example.com,john.doe,TempP@ss123,John,Doe,250
+example.com,jane.smith,TempP@ss456,Jane,Smith,500
+example.com,bob.jones,TempP@ss789,Bob,Jones,100
+example.com,alice.williams,TempP@ss101,Alice,Williams,300

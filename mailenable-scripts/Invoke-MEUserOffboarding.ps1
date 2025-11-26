@@ -63,9 +63,6 @@ param(
     [string]$BackupPath = "C:\MailEnable\Backups\Offboarding",
 
     [Parameter(Mandatory=$false)]
-    [switch]$WhatIf,
-
-    [Parameter(Mandatory=$false)]
     [Alias("h")]
     [switch]$Help
 )
